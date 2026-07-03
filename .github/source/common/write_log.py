@@ -43,3 +43,4 @@ class FileLogger:
         except OSError:
             error_timestamp: str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
             sys.stderr.write(f"{error_timestamp} CRIT ログファイルの出力に失敗しました。\n")
+            sys.stderr.write(f"{error_timestamp} {level} {message}\n")

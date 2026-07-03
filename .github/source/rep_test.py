@@ -44,6 +44,18 @@ def main() -> int:
             FileLogger.write("I", end_message)
             return 17
 
+        # 入力ファイルパスと出力ファイルパスが同じかチェック
+        abs_input = os.path.normcase(os.path.abspath(input_file_path))
+        abs_output = os.path.normcase(os.path.abspath(output_file_path))
+        if abs_input == abs_output:
+            error_message = f"入力ファイルパスと出力ファイルパスが同一です（return_code=22）"
+            sys.stderr.write(error_message + "\n")
+            FileLogger.write("E", error_message)
+            end_message = f"処理終了（return_code=22）"
+            print(end_message)
+            FileLogger.write("I", end_message)
+            return 22
+
         # 入力ファイルのチェック
         if not os.path.exists(input_file_path):
             error_message = f"入力ファイルが存在しません（return_code=18）"
