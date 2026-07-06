@@ -1,46 +1,99 @@
-import os
-import sys
+"""
+================================================================================
+ファイル名: write_log.py
+作成者: システム開発チーム
+作成日: 2026-07-06
+更新日: 2026-07-06
+バージョン: 1.0
+説明: ログファイルへメッセージを出力するクラス
+================================================================================
+"""
+
 from datetime import datetime
-from typing import ClassVar, Dict
+from pathlib import Path
+import sys
+from typing import Literal
 
 
-class FileLogger:
-    """メッセージを指定のログファイルに出力するクラス。"""
+class WriteLog:
+    """
+    ログファイルへメッセージを出力するクラス。
 
-    LOG_PATH: ClassVar[str] = r"c:\temp\testproject2.log"
-    LEVEL_MAP: ClassVar[Dict[str, str]] = {
+    ログファイルを「c:\\temp\\testproject2.log」に作成・追記し、
+    指定されたメッセージを所定の形式で出力します。
+    """
+
+    # ログレベルのマッピング
+    LOG_LEVELS: dict[str, str] = {
         "I": "INFO",
         "W": "WARN",
         "E": "ERR ",
-        "C": "CRIT",
+        "C": "CRIT"
     }
-    EMPTY_MESSAGE: ClassVar[str] = "メッセージが指定されていません。"
 
-    @classmethod
-    def write(cls, level: str, message: str) -> None:
-        """指定された区分とメッセージをログファイルに追記する。"""
-        timestamp: str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-        actual_message: str = message if message != "" else cls.EMPTY_MESSAGE
+    # ログファイルのパス
+    LOG_FILE_PATH: str = r"c:\temp\testproject2.log"
 
-        if level not in cls.LEVEL_MAP:
-            cls._append_line(timestamp, "WARN", f"メッセージ区分指定に誤りがあります（{level}）")
-            cls._append_line(timestamp, "CRIT", actual_message)
+    def write(self, level: str, message: str) -> None:
+        """
+        ログメッセージをファイルに出力する。
+
+        Args:
+            level (str): ログレベル（I/W/E/C）
+            message (str): 出力メッセージ
+
+        Returns:
+            None
+
+        Raises:
+            None（内部で例外を処理）
+        """
+        # 処理日時の取得
+        now: str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
+        # ログレベルの検証
+        if level not in self.LOG_LEVELS:
+            # 不正なログレベルの場合
+            self._output_log(now, "WARN", f"メッセージ区分指定に誤りがあります（{level}）")
+            if message == "":
+                self._output_log(now, "CRIT", "メッセージが指定されていません。")
+            else:
+                self._output_log(now, "CRIT", message)
             return
 
-        log_level: str = cls.LEVEL_MAP[level]
-        cls._append_line(timestamp, log_level, actual_message)
+        # メッセージが空文字の場合
+        if message == "":
+            message = "メッセージが指定されていません。"
 
-    @classmethod
-    def _append_line(cls, timestamp: str, level: str, message: str) -> None:
-        """ログファイルに1行を追記する。"""
+        # ログを出力
+        log_level: str = self.LOG_LEVELS[level]
+        self._output_log(now, log_level, message)
+
+    def _output_log(self, timestamp: str, level: str, message: str) -> None:
+        """
+        ログメッセージをファイルに出力する内部メソッド。
+
+        Args:
+            timestamp (str): 処理日時（yyyy/mm/dd hh:mm:ss形式）
+            level (str): ログレベル（INFO/WARN/ERR /CRIT）
+            message (str): 出力メッセージ
+
+        Returns:
+            None
+        """
+        log_entry: str = f"{timestamp} {level} {message}"
+
         try:
-            log_dir: str = os.path.dirname(cls.LOG_PATH)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
+            # ログファイルの親ディレクトリを作成
+            log_file: Path = Path(self.LOG_FILE_PATH)
+            log_file.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(cls.LOG_PATH, "a", encoding="utf-8") as log_file:
-                log_file.write(f"{timestamp} {level} {message}\n")
-        except OSError:
+            # ログファイルに追記
+            with open(log_file, mode="a", encoding="utf-8") as f:
+                f.write(log_entry + "\n")
+        except Exception as e:
+            # ログファイル出力失敗時
             error_timestamp: str = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
-            sys.stderr.write(f"{error_timestamp} CRIT ログファイルの出力に失敗しました。\n")
-            sys.stderr.write(f"{error_timestamp} {level} {message}\n")
+            error_message: str = f"{error_timestamp} CRIT ログファイルの出力に失敗しました。\n" \
+                                 f"{error_timestamp} {level} {message}"
+            sys.stderr.write(error_message + "\n")
